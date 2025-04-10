@@ -1,5 +1,5 @@
 const https = require("https");
-const { parseString } = require("xml2js");
+const { XMLParser } = require("fast-xml-parser");
 
 function fetchKitcoPrice(feedUrl) {
   return new Promise((resolve, reject) => {
@@ -7,20 +7,21 @@ function fetchKitcoPrice(feedUrl) {
       let data = "";
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
-        parseString(data, (err, result) => {
-          if (err) return reject(err);
-          try {
-            const title = result.rss.channel[0].item[0].title[0];
-            const match = title.match(/(\d{3,4}\.\d{2})/); // extract price like 2303.50
-            if (match) {
-              resolve(parseFloat(match[1]));
-            } else {
-              reject("No price found in title");
-            }
-          } catch (e) {
-            reject(e.toString());
+        try {
+          const parser = new XMLParser({ ignoreAttributes: false });
+          const result = parser.parse(data);
+
+          const title = result.rss.channel.item[0].title;
+          const match = title.match(/(\\d{3,4}\\.\\d{2})/); // match 2303.50 etc.
+
+          if (match) {
+            resolve(parseFloat(match[1]));
+          } else {
+            reject("No price found in title text");
           }
-        });
+        } catch (e) {
+          reject("Parsing failed: " + e.message);
+        }
       });
     }).on("error", reject);
   });
@@ -50,3 +51,4 @@ exports.handler = async function () {
     };
   }
 };
+
