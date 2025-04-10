@@ -1,45 +1,36 @@
 const https = require("https");
 
-function fetchYahoo(symbol) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+function fetchMetal(metal) {
+  const url = `https://metals.live/api/metal/${metal}`;
   return new Promise((resolve, reject) => {
-    https
-      .get(url, res => {
-        let data = "";
-        res.on("data", chunk => (data += chunk));
-        res.on("end", () => {
-          if (res.statusCode !== 200) {
-            return reject(new Error(`Failed to fetch ${symbol}: ${res.statusCode}`));
-          }
-
-          try {
-            const json = JSON.parse(data);
-            resolve(json);
-          } catch (e) {
-            reject(new Error(`Failed to parse JSON for ${symbol}: ${data}`));
-          }
-        });
-      })
-      .on("error", reject);
+    https.get(url, res => {
+      let data = "";
+      res.on("data", chunk => data += chunk);
+      res.on("end", () => {
+        try {
+          const json = JSON.parse(data);
+          resolve(json);
+        } catch (err) {
+          reject(`Error parsing ${metal} response: ${err}`);
+        }
+      });
+    }).on("error", reject);
   });
 }
 
 exports.handler = async function () {
   try {
     const [goldData, silverData] = await Promise.all([
-      fetchYahoo("XAUUSD=X"),
-      fetchYahoo("XAGUSD=X"),
+      fetchMetal("gold"),
+      fetchMetal("silver")
     ]);
 
-    const goldPrices = goldData.chart.result[0].indicators.quote[0].close;
-    const silverPrices = silverData.chart.result[0].indicators.quote[0].close;
-
-    const goldNow = goldPrices[goldPrices.length - 1];
-    const goldPrev = goldPrices[goldPrices.length - 2];
+    const goldNow = goldData[goldData.length - 1][1];
+    const goldPrev = goldData[goldData.length - 2][1];
     const goldChange = ((goldNow - goldPrev) / goldPrev) * 100;
 
-    const silverNow = silverPrices[silverPrices.length - 1];
-    const silverPrev = silverPrices[silverPrices.length - 2];
+    const silverNow = silverData[silverData.length - 1][1];
+    const silverPrev = silverData[silverData.length - 2][1];
     const silverChange = ((silverNow - silverPrev) / silverPrev) * 100;
 
     return {
@@ -50,13 +41,12 @@ exports.handler = async function () {
       body: JSON.stringify({
         gold: { price: goldNow, change: goldChange },
         silver: { price: silverNow, change: silverChange }
-      }),
+      })
     };
-  } catch (error) {
-    console.error("Proxy Error:", error.message);
+  } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: err.toString() })
     };
   }
 };
