@@ -1,14 +1,24 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const https = require("https");
+
+function fetchYahoo(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, res => {
+        let data = "";
+        res.on("data", chunk => (data += chunk));
+        res.on("end", () => resolve(JSON.parse(data)));
+      })
+      .on("error", reject);
+  });
+}
 
 exports.handler = async function () {
   try {
-    const [goldRes, silverRes] = await Promise.all([
-      fetch("https://query1.finance.yahoo.com/v8/finance/chart/XAUUSD=X"),
-      fetch("https://query1.finance.yahoo.com/v8/finance/chart/XAGUSD=X"),
+    const [goldData, silverData] = await Promise.all([
+      fetchYahoo("XAUUSD=X"),
+      fetchYahoo("XAGUSD=X"),
     ]);
-
-    const goldData = await goldRes.json();
-    const silverData = await silverRes.json();
 
     const goldPrices = goldData.chart.result[0].indicators.quote[0].close;
     const silverPrices = silverData.chart.result[0].indicators.quote[0].close;
