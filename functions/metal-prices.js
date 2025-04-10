@@ -1,18 +1,26 @@
 const https = require("https");
+const { parseString } = require("xml2js");
 
-function fetchPrice(metal) {
-  const url = `https://api.metals.dev/v1/spot/${metal}?currency=usd`;
+function fetchKitcoPrice(feedUrl) {
   return new Promise((resolve, reject) => {
-    https.get(url, res => {
+    https.get(feedUrl, res => {
       let data = "";
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
-        try {
-          const json = JSON.parse(data);
-          resolve(json); // Don't go straight to json.data yet
-        } catch (err) {
-          reject(`Error parsing ${metal} response: ${err}`);
-        }
+        parseString(data, (err, result) => {
+          if (err) return reject(err);
+          try {
+            const title = result.rss.channel[0].item[0].title[0];
+            const match = title.match(/(\d{3,4}\.\d{2})/); // extract price like 2303.50
+            if (match) {
+              resolve(parseFloat(match[1]));
+            } else {
+              reject("No price found in title");
+            }
+          } catch (e) {
+            reject(e.toString());
+          }
+        });
       });
     }).on("error", reject);
   });
@@ -20,9 +28,9 @@ function fetchPrice(metal) {
 
 exports.handler = async function () {
   try {
-    const [goldRaw, silverRaw] = await Promise.all([
-      fetchPrice("gold"),
-      fetchPrice("silver")
+    const [goldPrice, silverPrice] = await Promise.all([
+      fetchKitcoPrice("https://www.kitco.com/rss/gold.xml"),
+      fetchKitcoPrice("https://www.kitco.com/rss/silver.xml")
     ]);
 
     return {
@@ -31,8 +39,8 @@ exports.handler = async function () {
         "Access-Control-Allow-Origin": "*"
       },
       body: JSON.stringify({
-        gold: goldRaw,
-        silver: silverRaw
+        gold: { price: goldPrice },
+        silver: { price: silverPrice }
       })
     };
   } catch (err) {
