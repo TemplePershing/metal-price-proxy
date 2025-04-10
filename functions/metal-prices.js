@@ -9,7 +9,7 @@ function fetchPrice(metal) {
       res.on("end", () => {
         try {
           const json = JSON.parse(data);
-          resolve(json.data); // << fix here
+          resolve(json); // Don't go straight to json.data yet
         } catch (err) {
           reject(`Error parsing ${metal} response: ${err}`);
         }
@@ -20,16 +20,10 @@ function fetchPrice(metal) {
 
 exports.handler = async function () {
   try {
-    const [goldData, silverData] = await Promise.all([
+    const [goldRaw, silverRaw] = await Promise.all([
       fetchPrice("gold"),
       fetchPrice("silver")
     ]);
-
-    const goldNow = goldData.spot_price;
-    const goldChange = goldData.day_change_pct;
-
-    const silverNow = silverData.spot_price;
-    const silverChange = silverData.day_change_pct;
 
     return {
       statusCode: 200,
@@ -37,8 +31,8 @@ exports.handler = async function () {
         "Access-Control-Allow-Origin": "*"
       },
       body: JSON.stringify({
-        gold: { price: goldNow, change: goldChange },
-        silver: { price: silverNow, change: silverChange }
+        gold: goldRaw,
+        silver: silverRaw
       })
     };
   } catch (err) {
