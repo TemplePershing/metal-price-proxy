@@ -3,7 +3,13 @@ const { XMLParser } = require("fast-xml-parser");
 
 function fetchKitcoPrice(feedUrl) {
   return new Promise((resolve, reject) => {
-    https.get(feedUrl, res => {
+    const options = {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; NetlifyBot/1.0; +https://netlify.com/)"
+      }
+    };
+
+    https.get(feedUrl, options, res => {
       let data = "";
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
@@ -17,7 +23,7 @@ function fetchKitcoPrice(feedUrl) {
           }
 
           const title = itemList[0].title;
-          const match = title.match(/(\\d{3,4}\\.\\d{2})/); // Extract price like 2303.50
+          const match = title.match(/(\\d{3,4}\\.\\d{2})/);
 
           if (match) {
             resolve(parseFloat(match[1]));
