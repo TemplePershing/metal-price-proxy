@@ -1,7 +1,7 @@
 const https = require("https");
 
-function fetchMetal(metal) {
-  const url = `https://metals.live/api/metal/${metal}`;
+function fetchPrice(metal) {
+  const url = `https://api.metals.dev/v1/spot/${metal}?currency=usd`;
   return new Promise((resolve, reject) => {
     https.get(url, res => {
       let data = "";
@@ -21,17 +21,15 @@ function fetchMetal(metal) {
 exports.handler = async function () {
   try {
     const [goldData, silverData] = await Promise.all([
-      fetchMetal("gold"),
-      fetchMetal("silver")
+      fetchPrice("gold"),
+      fetchPrice("silver")
     ]);
 
-    const goldNow = goldData[goldData.length - 1][1];
-    const goldPrev = goldData[goldData.length - 2][1];
-    const goldChange = ((goldNow - goldPrev) / goldPrev) * 100;
+    const goldNow = goldData.spotPrice;
+    const goldChange = goldData.dayChangePct;
 
-    const silverNow = silverData[silverData.length - 1][1];
-    const silverPrev = silverData[silverData.length - 2][1];
-    const silverChange = ((silverNow - silverPrev) / silverPrev) * 100;
+    const silverNow = silverData.spotPrice;
+    const silverChange = silverData.dayChangePct;
 
     return {
       statusCode: 200,
