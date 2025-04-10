@@ -7,7 +7,18 @@ function fetchYahoo(symbol) {
       .get(url, res => {
         let data = "";
         res.on("data", chunk => (data += chunk));
-        res.on("end", () => resolve(JSON.parse(data)));
+        res.on("end", () => {
+          if (res.statusCode !== 200) {
+            return reject(new Error(`Failed to fetch ${symbol}: ${res.statusCode}`));
+          }
+
+          try {
+            const json = JSON.parse(data);
+            resolve(json);
+          } catch (e) {
+            reject(new Error(`Failed to parse JSON for ${symbol}: ${data}`));
+          }
+        });
       })
       .on("error", reject);
   });
@@ -42,9 +53,10 @@ exports.handler = async function () {
       }),
     };
   } catch (error) {
+    console.error("Proxy Error:", error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to fetch metal prices" }),
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };
