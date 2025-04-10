@@ -1,1 +1,1 @@
-# metal-price-proxy
+Proxy serverless function for live gold and silver prices from Yahoo Finance.

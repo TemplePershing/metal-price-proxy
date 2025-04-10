@@ -1,0 +1,6 @@
+[build]
+  functions = "functions"
+  command = ""
+
+[functions]
+  node_bundler = "esbuild"
