@@ -1,10 +1,9 @@
 {
-  "name": "metal-price-proxy",
+  "name": "metal-price-proxy-rss",
   "version": "1.0.0",
-  "description": "Proxy for gold and silver prices from Yahoo Finance",
   "main": "metal-prices.js",
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
-    "node-fetch": "^3.3.1"
+    "xml2js": "^0.4.23"
   }
 }
