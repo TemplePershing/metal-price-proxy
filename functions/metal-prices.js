@@ -9,7 +9,7 @@ function fetchPrice(metal) {
       res.on("end", () => {
         try {
           const json = JSON.parse(data);
-          resolve(json);
+          resolve(json.data); // << fix here
         } catch (err) {
           reject(`Error parsing ${metal} response: ${err}`);
         }
@@ -25,11 +25,11 @@ exports.handler = async function () {
       fetchPrice("silver")
     ]);
 
-    const goldNow = goldData.spotPrice;
-    const goldChange = goldData.dayChangePct;
+    const goldNow = goldData.spot_price;
+    const goldChange = goldData.day_change_pct;
 
-    const silverNow = silverData.spotPrice;
-    const silverChange = silverData.dayChangePct;
+    const silverNow = silverData.spot_price;
+    const silverChange = silverData.day_change_pct;
 
     return {
       statusCode: 200,
